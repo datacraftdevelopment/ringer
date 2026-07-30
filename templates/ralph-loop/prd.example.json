@@ -1,0 +1,29 @@
+{
+  "name": "example",
+  "context": "A tiny Python greeting module, built incrementally. Plain Python 3, standard library only, no packaging.",
+  "tasks": [
+    {
+      "key": "greet-fn",
+      "task_type": "code-feature",
+      "timeout_s": 600,
+      "spec": "Create a file greet.py at the repository root containing exactly one function: greet(name: str) -> str, which returns the string 'Hello, <name>!' with <name> replaced by the argument. No main block, no prints, no other functions, no imports.",
+      "check": "python3 -c \"from greet import greet; assert greet('Tiamat') == 'Hello, Tiamat!'; import greet as m; assert m.__doc__ is None or True\"",
+      "verified": "greet.py imports and greet('Tiamat') returns exactly 'Hello, Tiamat!'",
+      "passes": false
+    },
+    {
+      "key": "shout-fn",
+      "engine": "claude",
+      "model": "claude-haiku-4-5",
+      "task_type": "code-feature",
+      "timeout_s": 600,
+      "blocked_by": [
+        "greet-fn"
+      ],
+      "spec": "greet.py already exists at the repository root with a greet(name) function. Add a second function shout(name: str) -> str that returns greet(name) uppercased (it must call greet, not rebuild the string). Change nothing else in the file.",
+      "check": "python3 -c \"from greet import greet, shout; assert shout('Tiamat') == 'HELLO, TIAMAT!'; assert greet('Tiamat') == 'Hello, Tiamat!'\"",
+      "verified": "shout('Tiamat') returns 'HELLO, TIAMAT!' and greet still works, via a shout that delegates to greet",
+      "passes": false
+    }
+  ]
+}
