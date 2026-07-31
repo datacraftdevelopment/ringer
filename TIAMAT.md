@@ -16,7 +16,7 @@ Upstream stays the brain trust; this fork exists so a couple of our own ideas ca
 - **Review on every sync:** skim what upstream shipped; adopt or skip *on purpose*, and when something they built supersedes a delta of ours, retire ours and say so in its ADR.
 - **Upstreaming:** ideas that prove out go back as PRs (branch from `upstream/main`, per their CONTRIBUTING — small, scoped, executed proof, real motivation). Evolution ideas queue in `docs/tiamat/evolutions/` until proven.
 
-All Tiamat-local material lives in `TIAMAT.md` + `docs/tiamat/` — new files only, so syncs stay conflict-free. Upstream files are only touched when the change *is* a deliberate delta.
+All Tiamat-local material lives in `TIAMAT.md` + `docs/tiamat/` + `_pm/` (project management: skeleton, TASKS, sessions, decisions) — new files only, so syncs stay conflict-free. Upstream files are only touched when the change *is* a deliberate delta. Note: this is a public fork, so `_pm/` entries stay clean of anything client-flavored.
 
 ## Status
 
