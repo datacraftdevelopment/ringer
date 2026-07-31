@@ -29,6 +29,9 @@ def write_config(root: Path) -> Path:
         f"allow_full_access = false\n"
         f"[update]\nauto = false\n"
         f"[artifact]\nenabled = false\n"
+        # Keep test rows out of the real model scoreboard — displayed data
+        # must be true, and that includes ~/.ringer/runs.jsonl.
+        f"[eval]\nbackend = \"jsonl\"\njsonl_path = \"{root / 'state' / 'runs.jsonl'}\"\n"
         f"[engines.mock]\n"
         f'bin = "{sys.executable}"\n'
         f'args_template = ["{MOCK_WORKER}", "{{spec}}"]\n'
