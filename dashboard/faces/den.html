@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Den</title>
+<style>
+  :root{
+    --cave:#0b0908; --stone:#15100d; --stone-2:#1d1712; --seam:#2a211a;
+    --ash:#8a7f76; --bone:#e8ddd2; --gold:#d9a24a; --ember:#ff7a1a;
+    --pass:#8fbf6a; --fail:#e0552f;
+    --h-claude:#e0552f; --h-codex:#4f8fd9; --h-opencode:#58b26a;
+    --h-mock:#cfc9c2; --h-other:#8a6fd1;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--cave);color:var(--bone);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;}
+  a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
+  header{display:flex;align-items:center;gap:14px;padding:18px 22px 14px;
+    border-bottom:1px solid var(--seam);position:sticky;top:0;background:rgba(11,9,8,.94);
+    backdrop-filter:blur(4px);z-index:5}
+  header svg{flex:none}
+  .wordmark{font-size:22px;font-weight:700;letter-spacing:.24em}
+  .wordmark small{display:block;font-size:10px;letter-spacing:.18em;color:var(--ash);font-weight:400}
+  #pulse{margin-left:auto;font:12px var(--mono);color:var(--ash)}
+  #pulse.hot{color:var(--ember)}
+  main{max-width:1080px;margin:0 auto;padding:20px 22px 60px}
+  h2{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--ash);
+    margin:34px 0 12px;display:flex;align-items:center;gap:10px}
+  h2::after{content:"";flex:1;height:1px;background:var(--seam)}
+  .run{background:var(--stone);border:1px solid var(--seam);border-radius:10px;
+    margin-bottom:10px;overflow:hidden}
+  .run.active{border-color:var(--ember);box-shadow:0 0 18px rgba(255,122,26,.12);
+    animation:breathe 2.4s ease-in-out infinite}
+  @keyframes breathe{50%{box-shadow:0 0 30px rgba(255,122,26,.22)}}
+  .run-head{display:flex;align-items:center;gap:12px;padding:11px 14px;cursor:pointer}
+  .run-head:hover{background:var(--stone-2)}
+  .state{font:11px var(--mono);padding:2px 9px;border-radius:99px;
+    border:1px solid var(--seam);color:var(--ash);flex:none}
+  .state.running{color:var(--ember);border-color:var(--ember)}
+  .state.done-clean{color:var(--pass);border-color:var(--pass)}
+  .state.done-blood{color:var(--fail);border-color:var(--fail)}
+  .run-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .run-meta{margin-left:auto;display:flex;gap:14px;font:12px var(--mono);
+    color:var(--ash);flex:none;align-items:center}
+  .tally b{font-weight:700}
+  .tally .p{color:var(--pass)} .tally .f{color:var(--fail)}
+  .tasks{display:none;border-top:1px solid var(--seam)}
+  .run.open .tasks{display:block}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{padding:7px 14px;text-align:left;border-top:1px solid var(--seam)}
+  th{font:10px var(--mono);letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ash);border-top:none}
+  td.num,th.num{text-align:right;font-family:var(--mono);font-size:12px}
+  .chip{display:inline-flex;align-items:center;gap:6px;font:11px var(--mono)}
+  .chip i{width:8px;height:8px;border-radius:50%;flex:none;display:inline-block}
+  .glyph{font-family:var(--mono)}
+  .glyph.pass{color:var(--pass)} .glyph.fail{color:var(--fail)} .glyph.run{color:var(--ember)}
+  .retry{color:var(--ember)}
+  .verified{color:var(--ash);font-size:12px;max-width:380px}
+  .links{padding:8px 14px;border-top:1px solid var(--seam);font-size:12px;
+    display:flex;gap:16px}
+  .head-sec{background:var(--stone);border:1px solid var(--seam);border-radius:10px;
+    margin-bottom:12px;overflow:hidden}
+  .head-bar{display:flex;align-items:center;gap:10px;padding:10px 14px;
+    border-left:3px solid var(--seam)}
+  .head-bar .hname{font-weight:700;letter-spacing:.06em}
+  .head-bar .hlab{color:var(--ash);font-size:12px}
+  .head-bar .hcount{margin-left:auto;font:11px var(--mono);color:var(--ash)}
+  .empty{color:var(--ash);font-style:italic;padding:14px;text-align:center}
+  #err{display:none;margin:14px 0;padding:10px 14px;border:1px solid var(--fail);
+    border-radius:8px;color:var(--fail);font:12px var(--mono)}
+  footer{margin-top:44px;padding-top:14px;border-top:1px solid var(--seam);
+    display:flex;gap:18px;font-size:12px;color:var(--ash)}
+</style>
+</head>
+<body>
+<header>
+  <svg width="40" height="30" viewBox="0 0 40 30" aria-hidden="true">
+    <g fill="none" stroke-width="1.8" stroke-linecap="round">
+      <path d="M20 28 C 6 24, 4 14, 8 4"  stroke="#e0552f"/>
+      <path d="M20 28 C 12 22, 11 12, 14 3" stroke="#4f8fd9"/>
+      <path d="M20 28 C 20 20, 20 10, 20 2" stroke="#d9a24a"/>
+      <path d="M20 28 C 28 22, 29 12, 26 3" stroke="#58b26a"/>
+      <path d="M20 28 C 34 24, 36 14, 32 4" stroke="#8a6fd1"/>
+    </g>
+    <circle cx="8" cy="4" r="1.6" fill="#e0552f"/><circle cx="14" cy="3" r="1.6" fill="#4f8fd9"/>
+    <circle cx="20" cy="2" r="1.6" fill="#d9a24a"/><circle cx="26" cy="3" r="1.6" fill="#58b26a"/>
+    <circle cx="32" cy="4" r="1.6" fill="#8a6fd1"/>
+  </svg>
+  <div class="wordmark">DEN<small>TIAMAT · VERIFIED SWARM</small></div>
+  <div id="pulse">waking…</div>
+</header>
+<main>
+  <div id="err"></div>
+  <h2>The Hunt</h2>
+  <div id="hunt"><div class="empty">The den is quiet — no runs in flight.</div></div>
+  <h2>Kills Ledger</h2>
+  <div id="ledger"><div class="empty">No runs recorded yet.</div></div>
+  <h2>The Heads — fleet by harness</h2>
+  <div id="heads"><div class="empty">No scoreboard evidence yet.</div></div>
+  <footer>
+    <a href="/">stock Ringside</a>
+    <a href="/artifacts/index.html">artifact library</a>
+    <span>every PASS is an executed check — exit 0 is the only thing the den believes</span>
+  </footer>
+</main>
+<script>
+"use strict";
+/* Den — an alternate Ringside face. Honest-data rules: render only what
+   /api/runs and /api/models actually say; all strings via textContent. */
+const HEADS = {
+  claude:     {name:"Anthropic",  color:"var(--h-claude)"},
+  codex:      {name:"OpenAI",     color:"var(--h-codex)"},
+  opencode:   {name:"OpenRouter", color:"var(--h-opencode)"},
+  openrouter: {name:"OpenRouter", color:"var(--h-opencode)"},
+  grok:       {name:"xAI",        color:"var(--h-other)"},
+  mock:       {name:"Forge (local mock)", color:"var(--h-mock)"},
+};
+const headOf = e => HEADS[e] || {name:e || "unknown", color:"var(--h-other)"};
+const el = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text !== undefined) n.textContent = text;
+  return n;
+};
+const fmtTokens = t => t == null ? "—" : t >= 1000 ? (t/1000).toFixed(t >= 10000 ? 0 : 1) + "k" : String(t);
+const fmtSecs = s => s == null ? "—" : s >= 60 ? Math.floor(s/60) + "m" + Math.round(s%60) + "s" : Math.round(s*10)/10 + "s";
+const artHref = p => {
+  if (typeof p !== "string") return null;
+  const i = p.indexOf("/artifacts/");
+  return i === -1 ? null : p.slice(i);
+};
+const open = new Set();
+
+function chip(engine, label){
+  const c = el("span","chip");
+  const dot = el("i");
+  dot.style.background = headOf(engine).color;
+  c.append(dot, el("span", null, label ?? engine ?? "—"));
+  return c;
+}
+
+function statusGlyph(t){
+  if (t.status === "pass") return el("span","glyph pass","✓ pass");
+  if (t.status === "fail") return el("span","glyph fail","✗ fail");
+  return el("span","glyph run","◌ " + (t.status || "…"));
+}
+
+function runCard(r){
+  const running = r.state === "running" || !r.finished;
+  const card = el("div", "run" + (running ? " active" : ""));
+  if (open.has(r.run_id)) card.classList.add("open");
+
+  const head = el("div","run-head");
+  const failCount = r.fail ?? 0, passCount = r.pass ?? 0;
+  const st = el("span","state " + (running ? "running" : failCount ? "done-blood" : "done-clean"),
+                running ? "hunting" : failCount ? "wounded" : "clean kill");
+  head.append(st, el("span","run-name", r.run_name || r.run_id || "run"));
+  const meta = el("span","run-meta");
+  const tally = el("span","tally");
+  const p = el("b","p", String(passCount)); const f = el("b","f", String(failCount));
+  tally.append(p, document.createTextNode(" / "), f);
+  meta.append(tally, el("span",null, fmtTokens(r.tokens) + " tok"),
+              el("span",null, fmtSecs(r.elapsed_s)),
+              el("span",null, r.identity || ""));
+  head.append(meta);
+  head.addEventListener("click", () => {
+    card.classList.toggle("open");
+    card.classList.contains("open") ? open.add(r.run_id) : open.delete(r.run_id);
+  });
+  card.append(head);
+
+  const wrap = el("div","tasks");
+  const tbl = el("table");
+  const hr = el("tr");
+  ["head","task","model","status","att","tokens","time","verified — what a PASS proves"].forEach((h,i) =>
+    hr.append(el("th", i>=4 && i<=6 ? "num" : null, h)));
+  tbl.append(hr);
+  (r.tasks || []).forEach(t => {
+    const tr = el("tr");
+    const c1 = el("td"); c1.append(chip(t.engine, t.engine)); tr.append(c1);
+    tr.append(el("td",null, t.key || "—"));
+    tr.append(el("td",null, t.model || ""));
+    const c4 = el("td"); c4.append(statusGlyph(t)); tr.append(c4);
+    tr.append(el("td","num" + ((t.attempts ?? 1) > 1 ? " retry" : ""), String(t.attempts ?? "—")));
+    tr.append(el("td","num", fmtTokens(t.tokens)));
+    tr.append(el("td","num", fmtSecs(t.elapsed_s)));
+    const v = el("td","verified", t.verified || "");
+    tr.append(v);
+    tbl.append(tr);
+  });
+  wrap.append(tbl);
+  const links = el("div","links");
+  const rep = artHref(r.report_path), live = artHref(r.live_path);
+  if (running && live){ const a = el("a",null,"live page"); a.href = live; links.append(a); }
+  if (!running && rep){ const a = el("a",null,"run report"); a.href = rep; links.append(a); }
+  if (links.children.length) wrap.append(links);
+  card.append(wrap);
+  return card;
+}
+
+function renderRuns(payload){
+  const runs = Array.isArray(payload.runs) ? payload.runs : [];
+  const hunting = runs.filter(r => r.state === "running" || !r.finished);
+  const done = runs.filter(r => !hunting.includes(r));
+  const hunt = document.getElementById("hunt");
+  const ledger = document.getElementById("ledger");
+  hunt.replaceChildren(...(hunting.length ? hunting.map(runCard)
+    : [el("div","empty","The den is quiet — no runs in flight.")]));
+  ledger.replaceChildren(...(done.length ? done.map(runCard)
+    : [el("div","empty","No runs recorded yet.")]));
+  const pulse = document.getElementById("pulse");
+  pulse.textContent = hunting.length
+    ? hunting.length + " hunt" + (hunting.length > 1 ? "s" : "") + " in flight"
+    : "the den rests · " + done.length + " runs remembered";
+  pulse.classList.toggle("hot", hunting.length > 0);
+}
+
+function renderHeads(payload){
+  const groups = Array.isArray(payload.groups) ? payload.groups : [];
+  const byHarness = new Map();
+  groups.forEach(g => {
+    const k = g.harness || g.engine || "unknown";
+    if (!byHarness.has(k)) byHarness.set(k, []);
+    byHarness.get(k).push(g);
+  });
+  const heads = document.getElementById("heads");
+  if (!byHarness.size) return;
+  heads.replaceChildren(...[...byHarness.entries()].map(([harness, rows]) => {
+    const sec = el("div","head-sec");
+    const bar = el("div","head-bar");
+    bar.style.borderLeftColor = headOf(harness).color;
+    bar.append(el("span","hname", headOf(harness).name),
+               el("span","hlab", harness),
+               el("span","hcount", rows.length + " identities"));
+    sec.append(bar);
+    const tbl = el("table");
+    const hr = el("tr");
+    ["model identity","lab","tasks","first try","median tokens","median time"].forEach((h,i) =>
+      hr.append(el("th", i>=2 ? "num" : null, h)));
+    tbl.append(hr);
+    rows.sort((a,b) => (b.attempts ?? 0) - (a.attempts ?? 0)).forEach(g => {
+      const tr = el("tr");
+      const c1 = el("td"); c1.append(chip(harness, g.identity_key || "—")); tr.append(c1);
+      tr.append(el("td",null, g.lab || ""));
+      tr.append(el("td","num", String(g.attempts ?? 0)));
+      tr.append(el("td","num", g.first_try_pass_rate == null ? "—"
+        : Math.round(g.first_try_pass_rate * 100) + "%"));
+      tr.append(el("td","num", fmtTokens(g.median_tokens)));
+      tr.append(el("td","num", g.median_duration_ms == null ? "—"
+        : fmtSecs(g.median_duration_ms / 1000)));
+      tbl.append(tr);
+    });
+    sec.append(tbl);
+    return sec;
+  }));
+}
+
+async function poll(url, render){
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(res.status);
+    render(await res.json());
+    document.getElementById("err").style.display = "none";
+  } catch (e) {
+    const err = document.getElementById("err");
+    err.textContent = "the den sleeps — cannot reach " + url + " (" + e.message + ")";
+    err.style.display = "block";
+  }
+}
+poll("/api/runs", renderRuns);
+poll("/api/models", renderHeads);
+setInterval(() => poll("/api/runs", renderRuns), 2000);
+setInterval(() => poll("/api/models", renderHeads), 30000);
+</script>
+</body>
+</html>
