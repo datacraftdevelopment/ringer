@@ -1,7 +1,7 @@
 # Tiamat evolution: Den — a Ringside reskin
 
-- **Status:** flagged 2026-07-30 (Joe: "reskin Ringside to Den, as in dragon's den") — not started
-- **Upstream status:** `local-only` (but see below: upstream actively solicits this shape)
+- **Status:** **built, v1 live (2026-07-30, same day as the flag).** Two deltas, exactly the split upstream's guide prescribes: `f368e7a` — the face-selection mechanism (`/?face=<name>` serves `dashboard/faces/<name>.html`; stock default, presence changes nothing, loud 404s, slug-constrained names; tests + live-captured API fixtures) — and `25d9b87` — `dashboard/faces/den.html` (self-contained; hunts / kills ledger with per-task verdicts + verified sentences / fleet grouped by harness per Joe's original organizing principle; honest-data locked by DenContractTest). Full suite 261/261. View: `http://127.0.0.1:8700/?face=den`; stock and Den link to each other.
+- **Upstream status:** the selection mechanism (`f368e7a`) is **PR-ready material now** — it is the exact "ideal first piece" their CONTRIBUTING names (#39), small, tested, no behavior change without opt-in. The Den face itself upstreams later, after daily-use wear-in. **v2 candidates:** per-task-type drilldown in the Heads (upstream's stock models view added this — adopt-lane), richer fixture-render tests, live log tails on hunting runs.
 
 ## The idea
 
