@@ -94,6 +94,8 @@ CSP_META_TAG = (
 )
 DASHBOARD_HTML_PATH = Path(__file__).resolve().parent / "dashboard" / "dashboard.html"
 RINGSIDE_HTML_PATH = Path(__file__).resolve().parent / "dashboard" / "ringside.html"
+RINGSIDE_FACES_DIR = Path(__file__).resolve().parent / "dashboard" / "faces"
+RINGSIDE_FACE_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
 MINIMAL_DASHBOARD_HTML = """<!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>ringer dashboard</title></head>
@@ -5335,6 +5337,23 @@ def read_ringside_html() -> str:
 """
 
 
+def read_ringside_face_html(face: str) -> str | None:
+    """Alternate Ringside face, by explicit selection only (?face=<name>).
+
+    Stock stays the default; a face file's mere presence changes nothing.
+    Names are constrained to a safe slug so untrusted query input can never
+    traverse paths. Unknown or unreadable faces return None (the caller
+    404s rather than silently falling back — explicit selection deserves an
+    explicit answer).
+    """
+    if not RINGSIDE_FACE_NAME_RE.fullmatch(face):
+        return None
+    try:
+        return (RINGSIDE_FACES_DIR / f"{face}.html").read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+
 def send_response_body(
     handler: BaseHTTPRequestHandler,
     status: HTTPStatus,
@@ -5514,8 +5533,27 @@ class PersistentHudServer:
 
         class Handler(BaseHTTPRequestHandler):
             def do_GET(self) -> None:  # noqa: N802
-                path = urllib.parse.urlparse(self.path).path
+                parsed = urllib.parse.urlparse(self.path)
+                path = parsed.path
                 if path == "/":
+                    face = (urllib.parse.parse_qs(parsed.query).get("face") or [""])[0]
+                    if face:
+                        face_html = read_ringside_face_html(face)
+                        if face_html is None:
+                            send_response_body(
+                                self,
+                                HTTPStatus.NOT_FOUND,
+                                b"unknown face",
+                                content_type="text/plain; charset=utf-8",
+                            )
+                            return
+                        send_response_body(
+                            self,
+                            HTTPStatus.OK,
+                            face_html.encode("utf-8"),
+                            content_type="text/html; charset=utf-8",
+                        )
+                        return
                     body = read_ringside_html().encode("utf-8")
                     send_response_body(
                         self,
